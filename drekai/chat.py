@@ -11,7 +11,7 @@ from openai import HttpxBinaryResponseContent
 DEFAULT_OPTIONS = ChatSettings()
 
 class Chat:
-    def __init__(self, model, options):
+    def __init__(self, model, options: ChatSettings = None):
         self.model = model
         self.messages: list[dict, dict] = [{
                     "role": "system",
