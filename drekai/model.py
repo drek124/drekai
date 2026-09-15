@@ -1,5 +1,6 @@
 from typing import Literal
 from . import Chat
+from .settings import ChatSettings
 from openai import AsyncOpenAI, HttpxBinaryResponseContent
 MISSING = object()
 
@@ -53,7 +54,7 @@ class Chatbot:
         chat = self.start_chat()
         return await chat.generate_reply(prompt, role, **kwargs)
 
-    def start_chat(self) -> Chat:
+    def start_chat(self, *, options: ChatSettings = None) -> Chat:
         "Start a new chat with the chatbot"
-        return Chat(self)
+        return Chat(self, options=options)
        
