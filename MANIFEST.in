@@ -1,0 +1,3 @@
+recursive-include assets *
+include LICENSE
+include README.md
