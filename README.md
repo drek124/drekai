@@ -196,10 +196,10 @@ cd drekai
 pip install -e ".[dev]"
 
 # Lint
-ruff check .
+ruff check drekai/
 
 # Type check
-mypy .
+mypy drekai/
 
 # Test
 pytest
