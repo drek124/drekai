@@ -60,7 +60,8 @@ async def main():
     # Multi-turn chat
     chat = bot.start_chat()
     r1 = await chat.generate_reply("What's the weather in Tokyo?")
-    r2 = await chat.generate_reply("And in London?")
+    print(r1.choices[0].message.content)
+    r2 = await chat.generate_reply("And in London?") # Context retained
     print(r2.choices[0].message.content)
 
 asyncio.run(main())
