@@ -1,4 +1,4 @@
 """### DrekAI Tools Wrapper"""
-from .tools import Tool, ToolParameter
+from .tools import Tool
 
-__all__ = ["Tool", "ToolParameter"]
+__all__ = ["Tool"]

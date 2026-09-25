@@ -1,4 +1,4 @@
-# DrekAI
+# DrekAI OpenAI Wrapper
 
 A modern, **async-first** Python wrapper for OpenAI-compatible LLM APIs with built-in **tool/function calling** support.
 
@@ -73,21 +73,20 @@ asyncio.run(main())
 
 ```python
 from drekai import Model, Chatbot
-from drekai.tools import Tool, ToolParameter
+from drekai.tools import Tool
 
 model = Model("gpt-4o", "https://api.openai.com/v1", api_key="sk-...")
 bot = Chatbot("Assistant", "You are a helpful assistant.", model)
 
-async def get_weather(city: str) -> str:
+async def get_weather(city: str):
     """Get the current weather for a city."""
     # In a real app, call a weather API here
     return f"The weather in {city} is sunny, 25°C."
 
 tools = [
     Tool(
-        "get_weather",
-        [ToolParameter("city", "City name", type=str)],
-        callback=get_weather,
+        name="fetch_weather", # Overwrite function name if needed
+        callback=get_weather, 
     )
 ]
 
@@ -113,9 +112,7 @@ async def get_friends(user, limit: int = 50) -> str:
 
 tools = [
     Tool(
-        "get_friends",
-        [ToolParameter("limit", "Max friends to return", required=False, type=int)],
-        callback=get_friends,
+        callback=get_friends, # All info about the function name, description & parameters will be taken from the callback.
         sandbox_params=["user"],  # hidden from the LLM
     )
 ]
@@ -179,9 +176,6 @@ Per-chat configuration.
 
 ### `Tool(name, params, callback, sandbox_params)`
 An AI-callable function.
-
-### `ToolParameter(name, description, type, required)`
-Describes a tool parameter.
 
 ### `MessageItem` / `Image`
 Chat message attachments.

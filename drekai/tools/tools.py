@@ -1,6 +1,9 @@
 import inspect
+from inspect import _empty
 from types import NoneType
 from typing import Literal, Any
+
+MISSING = object()
 
 TOOL_PARAM_CLASSES = {
     str: "string",
@@ -13,59 +16,39 @@ TOOL_PARAM_CLASSES = {
     NoneType: "null"
 }
 
-class ToolParameter:
-    def __init__(self, name: str, description: str, *, required: bool = True,
-                  type: Any | Literal['string', 'number', 'integer', 'boolean',
-                                'object',  'array', 'null'] = str):
-        """## Tool Parameter
-        ## Parameters
-        - name: The name of the parameter; must match the present parameter in the callback.
-        - description: The description of this parameter that will be given to the LLM.
-        - type: The instance/object type of this parameter; Supported data types:
-        ```python 
-        str, int, float, bool, dict, list, None
-        ```
-        """
-        self.name: str = name
-        self.description: str = description
-        self.required: bool = required
-        if isinstance(type, str):
-            self.type: str = type
-        else:
-            if type not in TOOL_PARAM_CLASSES:
-                raise ValueError(f"Unknown tool parameter type \"{type}\"")
-            self.type: str = TOOL_PARAM_CLASSES[type]
 
 class Tool:
     def __init__(
-            self, name: str, params: list[ToolParameter] = [], *,
-            callback = None, sandbox_params: list[str] = []
+            self, name: str = MISSING, *,
+            callback = MISSING, sandbox_params: list[str] = []
                   ):
-        """## Create an AI Tool
+        '''## Create an AI Tool
         ### Parameters
-        - name: The name of the tool
-        - params: The parameters of the tool
+        - name: The name of the tool; if it's missing, then the name of the callback function will be used.
         - callback: The callback of the tool; the description of the tool is decided by the callback's docs
-        - sandbox_params: The parameters hidden from the model and passed into the tool parameters.
+        - sandbox_params: The parameters flagged to be hidden from the model and passed into the tool parameters.
         By using sandboxed parameters, it makes it impossible for the AI to manage data it isn't supposed to manage.
         Built-in sandbox parameters: 
           - `_tc_index`: The index of the tool call
         ### Example
         *Creating a tool that fetches a user's friends*      
         ```python
-        from DrekAI import Chatbot
-        from DrekAI.tools import Tool, ToolParameter
+        from drekai import Chatbot
+        from drekai.tools import Tool, ToolParameter
 
         assistant = Chatbot("Assistant", "You are a helpful assistant")
         chat = assistant.start_chat()
 
         async def get_friends(user, limit: int = 100) -> str:
-            "Fetch the user's friends list" # The description passed to the LLM
+            # 👇 The description passed to the LLM 
+            """Fetch the user's friends list
+            ## Parameters
+            - limit: The limit of fetched users. This is used to reduce load on the API."""
             result: str | Any = user.get_friends(limit=limit)
             return "Friends list:" + result # The data returned to the LLM
         tools = [
             Tool(
-                "get_friends", [ToolParameter("limit", "The limit of the fetched users", required=False, type=int)],
+                "get_friends",
                 callback=get_friends,
                 sandbox_params=["user"] # Accepted sandboxed parameters
                 )
@@ -79,12 +62,13 @@ class Tool:
             )
             print(response.choices[0].message.content)
         
-        ```"""
-        self.name: str = name
-        self.params: list[ToolParameter] = params
+        ```'''
+        if callback is MISSING:
+            raise ValueError("Callback is required for tools")
+        self.name: str = name if name is not MISSING else callback.__name__
+        self.callback = callback
+        self.params: dict = inspect.signature(callback).parameters
         self.sandbox_params: list[str] = sandbox_params
-        if callback:
-            self.callback = callback
         self.description: str = inspect.getdoc(self.callback)
         self.raw: dict = {
             'type': 'function',
@@ -95,12 +79,28 @@ class Tool:
                     'type': 'object',
                     'properties': {}
                 },
-                'required': [p.name for p in self.params if p.required]
+                'required': []
 
             }
         }
-        for tool in self.params:
-            self.raw['function']['parameters']['properties'][tool.name] = {'type': tool.type, 'description': tool.description}
+        for pname, param in self.params.items():
+            if pname in self.sandbox_params:
+                continue
+
+            ptype = param.annotation
+            if ptype is _empty:
+                raise ValueError(f"No parameter type present for parameter \"{pname}\".")
+            if ptype not in TOOL_PARAM_CLASSES:
+                raise ValueError(f"Unknown parameter type \"{ptype}\" for \"{pname}\"")
+            
+            required: bool = param.default is _empty
+
+            if required:
+                self.raw['function']['required'].append(pname)
+
+            self.raw['function']['parameters']['properties'][param.name] = {'type': TOOL_PARAM_CLASSES[ptype]}
+
+
 
         
 

@@ -13,7 +13,7 @@ DEFAULT_OPTIONS = ChatSettings()
 class Chat:
     def __init__(self, model, options: ChatSettings = None):
         self.model = model
-        self.messages: list[dict, dict] = [{
+        self.messages: list = [{
                     "role": "system",
                     "content": model.system_prompt
                 }]
@@ -24,16 +24,15 @@ class Chat:
 
 
 
-    def add_message_to_context(self, content: str, role: str = 'user') -> list[dict, dict]:
+    def add_message_to_context(self, content: str, role: str = 'user'):
         """Adds a message to the messages context."""
         self.messages.append({
             "role": role,
             "content": str(content)
         })
-        return self.messages
 
     async def generate_reply(
-            self, prompt: str = None, prompt_role: str = 'user', *, thinking_callback = None, return_response_data: bool = True,
+            self, prompt: str = None, prompt_role: str = 'user', *, thinking_callback = None,
             tools: list[Tool] = None, sandbox_params = {}, stream_callback = None, options: ChatSettings = None,
             items: list[MessageItem] = [], 
     ) -> HttpxBinaryResponseContent:
@@ -42,7 +41,6 @@ class Chat:
         - prompt: Add a prompt before generating
         - prompt_role: The role of the prompt; such as `'user'`, `'system'` & `'assistant'`
         - thinking_callback: The `async callback(thought: str)`; executed when a tool is called
-        - return_response_data: Whether to directly return the AI's response or the full API response.
         - tools: The list of available tools
         - sandbox_params: The sandboxed parameters that are invisible to the model; if a tool call from this request requires a certain sandboxed parameter, it will be fetched from here. (e.g. `{'user_id': user.id}`)
         - stream_callback: `async callback(chunk: str)`; sets `stream` to `True`
@@ -108,7 +106,7 @@ class Chat:
                     full_content += '\n[GENERATION_STOPPED]'
                     assistant_msg = {"role": "assistant", "content": full_content}
                     self.messages.append(assistant_msg)
-                    return assistant_msg if return_response_data else full_content
+                    return assistant_msg
                 # Track token usage if included in stream
                 if chunk.usage:
                     self.total_tokens += chunk.usage.total_tokens
@@ -186,6 +184,7 @@ class Chat:
                         
                         # 2. Attach to provider_specific_fields / extra_content (OpenAI proxy target)
                         tc["extra_content"] = {"google": {"thought_signature": "skip_thought_signature_validator"}}
+
             for ii, tc in enumerate(tool_calls, start=1):
                 tool = None
                 sandbox_params['_tc_index'] = ii # Add tool call index incase a tool needs it
@@ -202,10 +201,12 @@ class Chat:
                     await thinking_callback(reasoning_content)
                 try:
                     tool_response = await tool.callback(**args)
+
                 except Exception as e:
                     tb = traceback.format_exc()
                     tool_response = f"ERROR: {e}" if options.show_tool_error_type else "TOOL ERROR"
                     logging.error(tb)
+                    
                 last_tool = (ii == len(tool_calls))
                 response = await self.tool_response(
                     tc.id, 
@@ -219,12 +220,10 @@ class Chat:
                 if not last_tool:
                     continue
 
-            if return_response_data:
-                return response
+            return response
             
-            return text_response
 
-        return r if return_response_data else text_response
+        return r
 
 
     async def stop_live_generation(self):
@@ -251,5 +250,5 @@ class Chat:
     async def tool_response(self, call_id: str, content, *, stream_callback, generate_response: bool = True, sandbox_params: dict = {}, tools = []):
         self.messages.append({'role': 'tool', 'tool_call_id': call_id, 'content': str(content)})
         if not generate_response: return
-        response = await self.generate_reply(return_response_data=True, tools=tools, sandbox_params=sandbox_params, stream_callback=stream_callback)
+        response = await self.generate_reply(tools=tools, sandbox_params=sandbox_params, stream_callback=stream_callback)
         return response
