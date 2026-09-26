@@ -42,7 +42,7 @@ import asyncio
 from drekai import Model, Chatbot
 
 # 1. Define a model endpoint
-model = Model("gpt-4o", "https://api.openai.com/v1", api_key="sk-...")
+model = Model("gpt-4o", "https://api.example.com/v1", api_key="sk-...")
 
 # 2. Create a chatbot
 bot = Chatbot(
@@ -75,7 +75,7 @@ asyncio.run(main())
 from drekai import Model, Chatbot
 from drekai.tools import Tool
 
-model = Model("gpt-4o", "https://api.openai.com/v1", api_key="sk-...")
+model = Model("gpt-4o", "https://api.example.com/v1", api_key="sk-...")
 bot = Chatbot("Assistant", "You are a helpful assistant.", model)
 
 async def get_weather(city: str):
@@ -106,14 +106,13 @@ asyncio.run(main())
 Keep secrets like user IDs invisible to the LLM:
 
 ```python
-async def get_friends(user, limit: int = 50) -> str:
+async def get_friends(user: User | SandboxParam, limit: int = 50) -> str:
     """Fetch the user's friends list."""
     return str(user.get_friends(limit=limit))
 
 tools = [
     Tool(
         callback=get_friends, # All info about the function name, description & parameters will be taken from the callback.
-        sandbox_params=["user"],  # hidden from the LLM
     )
 ]
 

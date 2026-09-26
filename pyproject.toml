@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "drekai"
-version = "1.1.0"
+version = "1.2.0"
 description = "A modern, async-first Python wrapper for OpenAI-compatible LLM APIs with built-in tool use."
 readme = "README.md"
 license = "MIT"
