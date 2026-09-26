@@ -106,6 +106,9 @@ class Tool:
                     continue # Ignored sandboxed parameter
                 ptype = types_list[0]
 
+            inner_origin = get_origin(ptype)
+            if inner_origin is not None:
+                ptype = inner_origin
 
             if ptype not in TOOL_PARAM_CLASSES:
                 raise ValueError(f"Unknown parameter type \"{ptype}\" for \"{pname}\"")
