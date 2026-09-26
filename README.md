@@ -173,33 +173,14 @@ Created via `chatbot.start_chat()`. Manages conversation history.
 ### `ChatSettings(max_tokens, show_tool_error_type)`
 Per-chat configuration.
 
-### `Tool(name, params, callback, sandbox_params)`
+### `Tool(name, description, callback)`
 An AI-callable function.
 
 ### `MessageItem` / `Image`
 Chat message attachments.
 
----
 
-## 🧪 Development
 
-```bash
-# Clone and install in editable mode with dev deps
-git clone https://github.com/drek124/drekai.git
-cd drekai
-pip install -e ".[dev]"
-
-# Lint
-ruff check drekai/
-
-# Type check
-mypy drekai/
-
-# Test
-pytest
-```
-
----
 
 ## 📄 License
 
